@@ -473,6 +473,7 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
             </StickToBottom>
             <div className="flex flex-col justify-center">
               {!chatStarted && (
+                /* Container for initial chat action buttons with flex-wrap for responsiveness */
                 <div className="flex flex-wrap justify-center gap-2">
                   {ImportButtons(importChat)}
                   <GitCloneButton importChat={importChat} />
