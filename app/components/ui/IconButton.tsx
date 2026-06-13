@@ -3,7 +3,7 @@ import { classNames } from '~/utils/classNames';
 
 type IconSize = 'sm' | 'md' | 'lg' | 'xl' | 'xxl';
 
-interface BaseIconButtonProps {
+interface BaseIconButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   size?: IconSize;
   className?: string;
   iconClassName?: string;
@@ -39,6 +39,7 @@ export const IconButton = memo(
         title,
         onClick,
         children,
+        ...rest
       }: IconButtonProps,
       ref: ForwardedRef<HTMLButtonElement>,
     ) => {
@@ -61,6 +62,7 @@ export const IconButton = memo(
 
             onClick?.(event);
           }}
+          {...rest}
         >
           {children ? children : <div className={classNames(icon, getIconSize(size), iconClassName)}></div>}
         </button>

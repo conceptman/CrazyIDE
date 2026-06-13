@@ -202,19 +202,30 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
     }, []);
 
     useEffect(() => {
-      if (typeof window !== 'undefined') {
-        let parsedApiKeys: Record<string, string> | undefined = {};
+      if (typeof window === 'undefined') {
+        return undefined;
+      }
 
+      const updateApiKeys = () => {
         try {
-          parsedApiKeys = getApiKeysFromCookies();
+          const parsedApiKeys = getApiKeysFromCookies();
           setApiKeys(parsedApiKeys);
         } catch (error) {
-          console.error('Error loading API keys from cookies:', error);
-          Cookies.remove('apiKeys');
+          console.error('Error loading API keys:', error);
         }
+      };
 
+      updateApiKeys();
+
+      window.addEventListener('storage', updateApiKeys);
+
+      const fetchModels = () => {
         setIsModelLoading('all');
-        fetch('/api/models')
+        fetch('/api/models', {
+          headers: {
+            'x-api-keys': JSON.stringify(getApiKeysFromCookies()),
+          },
+        })
           .then((response) => response.json())
           .then((data) => {
             const typedData = data as { modelList: ModelInfo[] };
@@ -226,7 +237,17 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
           .finally(() => {
             setIsModelLoading(undefined);
           });
-      }
+      };
+
+      fetchModels();
+
+      // Listen for model refresh events (e.g., when API key is saved)
+      window.addEventListener('refreshModels', fetchModels);
+
+      return () => {
+        window.removeEventListener('storage', updateApiKeys);
+        window.removeEventListener('refreshModels', fetchModels);
+      };
     }, [providerList, provider]);
 
     const onApiKeysChange = async (providerName: string, apiKey: string) => {
@@ -239,7 +260,11 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
       let providerModels: ModelInfo[] = [];
 
       try {
-        const response = await fetch(`/api/models/${encodeURIComponent(providerName)}`);
+        const response = await fetch(`/api/models/${encodeURIComponent(providerName)}`, {
+          headers: {
+            'x-api-keys': JSON.stringify(getApiKeysFromCookies()),
+          },
+        });
         const data = await response.json();
         providerModels = (data as { modelList: ModelInfo[] }).modelList;
       } catch (error) {

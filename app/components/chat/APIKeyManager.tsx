@@ -28,6 +28,14 @@ export function getApiKeysFromCookies() {
     }
   }
 
+  if (typeof window !== 'undefined') {
+    const crazyKey = localStorage.getItem('crazy_router_api_key');
+
+    if (crazyKey) {
+      parsedKeys.CrazyRouter = crazyKey;
+    }
+  }
+
   return parsedKeys;
 }
 
@@ -77,10 +85,15 @@ export const APIKeyManager: React.FC<APIKeyManagerProps> = ({ provider, apiKey, 
     // Save to parent state
     setApiKey(tempKey);
 
-    // Save to cookies
-    const currentKeys = getApiKeysFromCookies();
-    const newKeys = { ...currentKeys, [provider.name]: tempKey };
-    Cookies.set('apiKeys', JSON.stringify(newKeys));
+    // Save to localStorage for CrazyRouter BYOK model
+    if (provider.name === 'CrazyRouter') {
+      localStorage.setItem('crazy_router_api_key', tempKey);
+    } else {
+      // Save to cookies for other providers (if any remained, though they should be removed)
+      const currentKeys = getApiKeysFromCookies();
+      const newKeys = { ...currentKeys, [provider.name]: tempKey };
+      Cookies.set('apiKeys', JSON.stringify(newKeys));
+    }
 
     setIsEditing(false);
   };

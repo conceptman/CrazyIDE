@@ -112,7 +112,21 @@ export const ChatImpl = memo(
     });
     const { showChat } = useStore(chatStore);
     const [animationScope, animate] = useAnimate();
-    const [apiKeys, setApiKeys] = useState<Record<string, string>>({});
+    const [apiKeys, setApiKeys] = useState<Record<string, string>>(() => {
+      if (typeof window !== 'undefined') {
+        const storedApiKeys = Cookies.get('apiKeys');
+        const parsedKeys = storedApiKeys ? JSON.parse(storedApiKeys) : {};
+        const crazyKey = localStorage.getItem('crazy_router_api_key');
+
+        if (crazyKey) {
+          parsedKeys.CrazyRouter = crazyKey;
+        }
+
+        return parsedKeys;
+      }
+
+      return {};
+    });
     const [chatMode, setChatMode] = useState<'discuss' | 'build'>('build');
     const [selectedElement, setSelectedElement] = useState<ElementInfo | null>(null);
     const mcpSettings = useMCPStore((state) => state.settings);
@@ -577,11 +591,24 @@ export const ChatImpl = memo(
     );
 
     useEffect(() => {
-      const storedApiKeys = Cookies.get('apiKeys');
+      const updateApiKeys = () => {
+        const storedApiKeys = Cookies.get('apiKeys');
+        const parsedKeys = storedApiKeys ? JSON.parse(storedApiKeys) : {};
 
-      if (storedApiKeys) {
-        setApiKeys(JSON.parse(storedApiKeys));
-      }
+        const crazyKey = localStorage.getItem('crazy_router_api_key');
+
+        if (crazyKey) {
+          parsedKeys.CrazyRouter = crazyKey;
+        }
+
+        setApiKeys(parsedKeys);
+      };
+
+      updateApiKeys();
+
+      window.addEventListener('storage', updateApiKeys);
+
+      return () => window.removeEventListener('storage', updateApiKeys);
     }, []);
 
     const handleModelChange = (newModel: string) => {
